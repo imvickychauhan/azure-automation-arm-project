@@ -30,9 +30,10 @@
         }
     },
     "variables": {
-        "storageAccountName": "[concat('st', uniqueString(resourceGroup().id))]",
-        "virtualNetworkName": "[concat('vnet-', parameters('environment'), '-', uniqueString(resourceGroup().id))]",
-        "subnetName": "default"
+    "suffix": "[substring(uniqueString(deployment().name), 0, 8)]",
+    "storageAccountName": "[toLower(concat('st', variables('suffix')))]",
+    "virtualNetworkName": "[concat('vnet-', parameters('environment'), '-', variables('suffix'))]",
+    "subnetName": "default"
     },
     "resources": [
         {
