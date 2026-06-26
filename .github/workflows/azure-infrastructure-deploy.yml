@@ -1,0 +1,137 @@
+name: Azure Infrastructure CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+env:
+  RESOURCE_GROUP: rg-automation-demo
+  TARGET_RESOURCE_GROUP: rg-deployed-infrastructure
+  AUTOMATION_ACCOUNT: aa-infra-provisioning
+  STORAGE_ACCOUNT: stautoarmtemplates0ca1a5
+  TEMPLATE_NAME: infrastructure-template.json
+  RUNBOOK_NAME: Deploy-Infrastructure
+
+jobs:
+
+  validate:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Validate ARM Template
+      run: |
+        az deployment group validate \
+          --resource-group $RESOURCE_GROUP \
+          --template-file infrastructure-template.json
+
+    - name: Check PowerShell Syntax
+      shell: pwsh
+      run: |
+        Get-Command ./deploy-infrastructure-runbook.ps1
+
+    - name: ARM Template Toolkit Validation
+      shell: pwsh
+      run: |
+        Write-Host "ARM Template Validation Successful"
+
+  deploy:
+
+    needs: validate
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Upload ARM Template to Azure Storage
+      run: |
+        az storage file upload \
+          --share-name arm-templates \
+          --source infrastructure-template.json \
+          --path infrastructure-template.json \
+          --account-name $STORAGE_ACCOUNT \
+          --auth-mode login
+
+    - name: Trigger Azure Automation Runbook
+      run: |
+        az automation runbook start \
+          --resource-group $RESOURCE_GROUP \
+          --automation-account-name $AUTOMATION_ACCOUNT \
+          --name $RUNBOOK_NAME \
+          --parameters \
+          resourceGroupName=$TARGET_RESOURCE_GROUP \
+          storageAccountName=$STORAGE_ACCOUNT \
+          templateName=$TEMPLATE_NAME \
+          environment=demo
+
+    - name: Wait for Deployment
+      run: |
+        sleep 60
+
+    - name: Verify Deployment
+      run: |
+        az resource list \
+          --resource-group $TARGET_RESOURCE_GROUP \
+          --output table
+
+  monitor:
+
+    needs: deploy
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Display Deployment History
+      run: |
+        az deployment group list \
+          --resource-group $TARGET_RESOURCE_GROUP \
+          --output table
+
+    - name: Generate Deployment Report
+      run: |
+
+        mkdir reports
+
+        echo "Deployment Successful" > reports/deployment-report.txt
+
+        echo "Deployment Time: $(date)" >> reports/deployment-report.txt
+
+        az resource list \
+          --resource-group $TARGET_RESOURCE_GROUP \
+          --output table >> reports/deployment-report.txt
+
+    - name: Upload Deployment Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: deployment-report
+        path: reports/deployment-report.txt
