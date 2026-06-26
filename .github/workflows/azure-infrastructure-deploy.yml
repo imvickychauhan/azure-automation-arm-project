@@ -13,7 +13,6 @@ on:
 
 env:
   RESOURCE_GROUP: rg-automation-demo
-  TARGET_RESOURCE_GROUP: rg-deployed-infrastructure
   AUTOMATION_ACCOUNT: aa-infra-provisioning
   STORAGE_ACCOUNT: stautoarmtemplates0ca1a5
   TEMPLATE_NAME: infrastructure-template.json
@@ -76,6 +75,20 @@ jobs:
           --account-name ${{ secrets.STORAGE_ACCOUNT_NAME }} \
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }}
             
+    - name: Generate Deployment Resource Group
+      shell: bash
+      run: |
+
+        RG_NAME="rg-demo-$(date +%Y%m%d-%H%M%S)"
+
+        echo "TARGET_RESOURCE_GROUP=$RG_NAME" >> $GITHUB_ENV
+
+        az group create \
+          --name $RG_NAME \
+          --location eastus
+
+        echo "Created Resource Group: $RG_NAME"
+
     - name: Start Runbook and Wait
       shell: bash
       run: |
