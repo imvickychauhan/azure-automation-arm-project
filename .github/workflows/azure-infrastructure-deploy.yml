@@ -103,7 +103,7 @@ jobs:
           StorageResourceGroup=$RESOURCE_GROUP \
           TemplateName=$TEMPLATE_NAME \
           Environment=demo \
-          --query jobId -o tsv)
+          --query id -o tsv)
 
         echo "Job ID: $JOB_ID"
 
@@ -113,7 +113,7 @@ jobs:
           STATUS=$(az automation job show \
             --resource-group $RESOURCE_GROUP \
             --automation-account-name $AUTOMATION_ACCOUNT \
-            --job-id $JOB_ID \
+            --ids $JOB_ID \
             --query status \
             -o tsv)
     
