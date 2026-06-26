@@ -75,19 +75,6 @@ jobs:
           --path infrastructure-template.json \
           --account-name ${{ secrets.STORAGE_ACCOUNT_NAME }} \
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }}
-
-    - name: Trigger Azure Automation Runbook
-      run: |
-        az automation runbook start \
-          --resource-group $RESOURCE_GROUP \
-          --automation-account-name $AUTOMATION_ACCOUNT \
-          --name $RUNBOOK_NAME \
-          --parameters \
-            ResourceGroupName=$TARGET_RESOURCE_GROUP \
-            StorageAccountName=$STORAGE_ACCOUNT \
-            StorageResourceGroup=$RESOURCE_GROUP \
-            TemplateName=$TEMPLATE_NAME \
-            Environment=demo
             
     - name: Start Runbook and Wait
       shell: bash
