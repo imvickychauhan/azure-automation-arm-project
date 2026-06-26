@@ -13,7 +13,6 @@ on:
 
 env:
   RESOURCE_GROUP: rg-automation-demo
-  TARGET_RESOURCE_GROUP: rg-deployed-infrastructure
   AUTOMATION_ACCOUNT: aa-infra-provisioning
   STORAGE_ACCOUNT: stautoarmtemplates0ca1a5
   TEMPLATE_NAME: infrastructure-template.json
@@ -57,6 +56,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    outputs:
+      resource_group: ${{ steps.create_rg.outputs.resource_group }}
+
     steps:
 
     - name: Checkout Repository
@@ -76,6 +78,22 @@ jobs:
           --account-name ${{ secrets.STORAGE_ACCOUNT_NAME }} \
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }}
             
+    - name: Generate Deployment Resource Group
+      id: create_rg
+      shell: bash
+      run: |
+
+        RG_NAME="rg-demo-$(date +%Y%m%d-%H%M%S)"
+
+        az group create \
+          --name $RG_NAME \
+          --location eastus
+
+        echo "TARGET_RESOURCE_GROUP=$RG_NAME" >> $GITHUB_ENV
+
+        echo "resource_group=$RG_NAME" >> $GITHUB_OUTPUT
+
+
     - name: Start Runbook and Wait
       shell: bash
       run: |
@@ -120,10 +138,6 @@ jobs:
     
         done
 
-    - name: Wait for Deployment
-      run: |
-        sleep 60
-
     - name: Verify Deployment
       run: |
         az resource list \
@@ -146,7 +160,7 @@ jobs:
     - name: Display Deployment History
       run: |
         az deployment group list \
-          --resource-group $TARGET_RESOURCE_GROUP \
+          --resource-group ${{ needs.deploy.outputs.resource_group }} \
           --output table
 
     - name: Generate Deployment Report
@@ -159,7 +173,7 @@ jobs:
         echo "Deployment Time: $(date)" >> reports/deployment-report.txt
 
         az resource list \
-          --resource-group $TARGET_RESOURCE_GROUP \
+          --resource-group ${{ needs.deploy.outputs.resource_group }} \
           --output table >> reports/deployment-report.txt
 
     - name: Upload Deployment Report
