@@ -55,7 +55,10 @@ jobs:
     needs: validate
 
     runs-on: ubuntu-latest
-
+    
+    outputs:
+      resource_group: ${{ steps.create_rg.outputs.resource_group }}
+    
     steps:
 
     - name: Checkout Repository
@@ -76,18 +79,19 @@ jobs:
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }}
             
     - name: Generate Deployment Resource Group
+      id: create_rg
       shell: bash
       run: |
-
+    
         RG_NAME="rg-demo-$(date +%Y%m%d-%H%M%S)"
-
-        echo "TARGET_RESOURCE_GROUP=$RG_NAME" >> $GITHUB_ENV
-
+    
         az group create \
           --name $RG_NAME \
           --location eastus
-
-        echo "Created Resource Group: $RG_NAME"
+    
+        echo "TARGET_RESOURCE_GROUP=$RG_NAME" >> $GITHUB_ENV
+    
+        echo "resource_group=$RG_NAME" >> $GITHUB_OUTPUT
 
     - name: Start Runbook and Wait
       shell: bash
@@ -159,7 +163,7 @@ jobs:
     - name: Display Deployment History
       run: |
         az deployment group list \
-          --resource-group $TARGET_RESOURCE_GROUP \
+          --resource-group ${{ needs.deploy.outputs.resource_group }} \
           --output table
 
     - name: Generate Deployment Report
@@ -172,7 +176,7 @@ jobs:
         echo "Deployment Time: $(date)" >> reports/deployment-report.txt
 
         az resource list \
-          --resource-group $TARGET_RESOURCE_GROUP \
+          --resource-group ${{ needs.deploy.outputs.resource_group }} \
           --output table >> reports/deployment-report.txt
 
     - name: Upload Deployment Report
