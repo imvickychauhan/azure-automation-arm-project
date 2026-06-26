@@ -83,10 +83,55 @@ jobs:
           --automation-account-name $AUTOMATION_ACCOUNT \
           --name $RUNBOOK_NAME \
           --parameters \
-          resourceGroupName=$TARGET_RESOURCE_GROUP \
-          storageAccountName=$STORAGE_ACCOUNT \
-          templateName=$TEMPLATE_NAME \
-          environment=demo
+            ResourceGroupName=$TARGET_RESOURCE_GROUP \
+            StorageAccountName=$STORAGE_ACCOUNT \
+            StorageResourceGroup=$RESOURCE_GROUP \
+            TemplateName=$TEMPLATE_NAME \
+            Environment=demo
+            
+    - name: Start Runbook and Wait
+      shell: bash
+      run: |
+      
+        JOB_ID=$(az automation runbook start \
+          --resource-group $RESOURCE_GROUP \
+          --automation-account-name $AUTOMATION_ACCOUNT \
+          --name $RUNBOOK_NAME \
+          --parameters \
+          ResourceGroupName=$TARGET_RESOURCE_GROUP \
+          StorageAccountName=$STORAGE_ACCOUNT \
+          StorageResourceGroup=$RESOURCE_GROUP \
+          TemplateName=$TEMPLATE_NAME \
+          Environment=demo \
+          --query jobId -o tsv)
+
+        echo "Job ID: $JOB_ID"
+
+        while true
+        do
+
+          STATUS=$(az automation job show \
+            --resource-group $RESOURCE_GROUP \
+            --automation-account-name $AUTOMATION_ACCOUNT \
+            --job-id $JOB_ID \
+            --query status \
+            -o tsv)
+    
+          echo "Current Status : $STATUS"
+    
+          if [ "$STATUS" = "Completed" ]; then
+            echo "Deployment Completed"
+            break
+          fi
+    
+          if [ "$STATUS" = "Failed" ]; then
+            echo "Deployment Failed"
+            exit 1
+          fi
+    
+          sleep 10
+    
+        done
 
     - name: Wait for Deployment
       run: |
