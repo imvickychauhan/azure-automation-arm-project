@@ -79,20 +79,18 @@ jobs:
           --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }}
             
     - name: Generate Deployment Resource Group
-      id: create_rg
       shell: bash
       run: |
 
         RG_NAME="rg-demo-$(date +%Y%m%d-%H%M%S)"
 
+        echo "TARGET_RESOURCE_GROUP=$RG_NAME" >> $GITHUB_ENV
+
         az group create \
           --name $RG_NAME \
           --location eastus
 
-        echo "TARGET_RESOURCE_GROUP=$RG_NAME" >> $GITHUB_ENV
-
-        echo "resource_group=$RG_NAME" >> $GITHUB_OUTPUT
-
+        echo "Created Resource Group: $RG_NAME"
 
     - name: Start Runbook and Wait
       shell: bash
