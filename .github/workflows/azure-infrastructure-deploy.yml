@@ -73,9 +73,8 @@ jobs:
           --share-name arm-templates \
           --source infrastructure-template.json \
           --path infrastructure-template.json \
-          --account-name $STORAGE_ACCOUNT \
-          --auth-mode login \
-          --enable-file-backup-request-intent
+          --account-name ${{ secrets.STORAGE_ACCOUNT_NAME }} \
+          --account-key ${{ secrets.STORAGE_ACCOUNT_KEY }}
 
     - name: Trigger Azure Automation Runbook
       run: |
