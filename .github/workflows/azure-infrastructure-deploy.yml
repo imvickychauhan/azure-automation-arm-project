@@ -74,7 +74,8 @@ jobs:
           --source infrastructure-template.json \
           --path infrastructure-template.json \
           --account-name $STORAGE_ACCOUNT \
-          --auth-mode login
+          --auth-mode login \
+          --enable-file-backup-request-intent
 
     - name: Trigger Azure Automation Runbook
       run: |
