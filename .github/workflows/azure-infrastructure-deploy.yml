@@ -137,10 +137,6 @@ jobs:
     
         done
 
-    - name: Wait for Deployment
-      run: |
-        sleep 60
-
     - name: Verify Deployment
       run: |
         az resource list \
